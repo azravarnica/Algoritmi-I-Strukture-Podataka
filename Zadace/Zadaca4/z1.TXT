@@ -1,0 +1,229 @@
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+template<typename Kljuc,typename Vrijednost>
+class Mapa {
+  public:
+  Mapa() {};
+  virtual ~Mapa() {}
+  virtual Vrijednost operator [](Kljuc kljuc) const = 0;
+  virtual Vrijednost &operator [](Kljuc kljuc) = 0;
+  virtual int brojElemenata() const = 0;
+  virtual void obrisi(const Kljuc &kljuc) = 0;
+  virtual void obrisi() = 0;
+}; 
+
+template<typename Kljuc,typename Vrijednost>
+struct Cvor {
+    Kljuc kljuc = Kljuc();
+    Vrijednost vrijednost = Vrijednost();
+    Cvor* roditelj = nullptr;
+    Cvor* desno = nullptr;
+    Cvor* lijevo = nullptr;
+    int balans = 0;
+};
+
+template<typename Kljuc, typename Vrijednost>
+class AVLStabloMapa : public Mapa<Kljuc,Vrijednost>{
+    int velicina = 0;
+    void preO(Cvor<Kljuc,Vrijednost>* pok, Cvor<Kljuc, Vrijednost>* &pok1, Cvor<Kljuc, Vrijednost>* pok2 = nullptr);
+    void lijevaRotacija(Cvor<Kljuc, Vrijednost>* cvor);
+    void desnaRotacija(Cvor<Kljuc, Vrijednost>* cvor);
+    void azurirajBalans(Cvor<Kljuc, Vrijednost>* cvor);
+    void obrisiStablo(Cvor<Kljuc, Vrijednost>* cvor){
+        if(cvor == nullptr) return;
+        obrisiStablo(cvor->desno);
+        obrisiStablo(cvor->lijevo);
+        delete cvor;
+    }
+    Cvor<Kljuc, Vrijednost>* korijen;
+
+    public:
+    AVLStabloMapa(): Mapa<Kljuc, Vrijednost>(), korijen(nullptr), velicina(0) {}
+    ~AVLStabloMapa(){
+        //this->obrisi();
+        obrisiStablo(korijen);
+    }
+    void obrisi(){
+       // while(korijen != nullptr) obrisi(korijen->kljuc);
+       obrisiStablo(korijen);
+        korijen = nullptr;
+        velicina = 0;
+    }
+    void obrisi(const Kljuc &kljuc);
+    int brojElemenata () const{
+        return velicina;
+    }
+    AVLStabloMapa& operator =(const AVLStabloMapa<Kljuc, Vrijednost> &avl){
+        if(&avl == this) return *this;
+        //this->obrisi();
+        obrisiStablo(korijen);
+        preO(avl.korijen, korijen);
+        velicina = avl.velicina;
+        return *this;
+    }
+    AVLStabloMapa& operator =(AVLStabloMapa<Kljuc, Vrijednost> &&avl){
+        if(&avl == this) return *this;
+        //this->obrisi();
+        obrisiStablo(korijen);
+        velicina = avl.velicina;
+        korijen = avl.korijen;
+        return *this;
+    }
+    AVLStabloMapa(const AVLStabloMapa<Kljuc, Vrijednost> &avl){
+        velicina = avl.velicina;
+        preO(avl.korijen, korijen);
+    }
+    AVLStabloMapa(AVLStabloMapa<Kljuc, Vrijednost> &&avl){
+        velicina = avl.velicina;
+        korijen = avl.korijen;
+    }
+    Vrijednost& operator [](Kljuc kljuc);
+    Vrijednost operator [](Kljuc kljuc) const{
+        Cvor<Kljuc, Vrijednost>* p = korijen;
+        while(p != nullptr && kljuc != p->kljuc){
+            if(kljuc > p->kljuc) p = p->desno;
+            else p = p->lijevo;
+        }
+        if(p == nullptr) return Vrijednost();
+        return p->vrijednost;
+    }
+};
+
+template <typename Kljuc, typename Vrijednost>
+void AVLStabloMapa<Kljuc, Vrijednost>::preO(Cvor<Kljuc,Vrijednost>* pok, Cvor<Kljuc, Vrijednost>* &pok1, Cvor<Kljuc, Vrijednost>* pok2){
+    if(pok != nullptr){
+        pok1 = new Cvor<Kljuc, Vrijednost>();
+        pok1->kljuc = pok->kljuc;
+        pok1->vrijednost = pok->vrijednost;
+        pok1->balans = pok->balans;
+        pok1->roditelj = pok2;
+        preO(pok->lijevo, pok1->lijevo, pok2);
+        preO(pok->desno, pok1->desno, pok2);
+    }
+}
+
+template <typename Kljuc, typename Vrijednost>
+void AVLStabloMapa<Kljuc, Vrijednost>::lijevaRotacija(Cvor<Kljuc, Vrijednost>* cvor){
+    if(cvor->balans * cvor->desno->balans < 0) desnaRotacija(cvor->desno);
+    Cvor<Kljuc, Vrijednost>* pomocni = cvor->desno;
+    pomocni->roditelj = cvor->roditelj;
+    cvor->desno = nullptr;
+    pomocni->lijevo = cvor;
+    cvor->roditelj = pomocni;
+    pomocni->balans = 0;
+    cvor->balans = 0;
+}
+
+template <typename Kljuc, typename Vrijednost>
+void AVLStabloMapa<Kljuc, Vrijednost>::desnaRotacija(Cvor<Kljuc, Vrijednost>* cvor){
+    if(cvor->balans * cvor->lijevo->balans < 0) lijevaRotacija(cvor->lijevo);
+    Cvor<Kljuc, Vrijednost>* pomocni = cvor->lijevo;
+    pomocni->roditelj = cvor->roditelj;
+    cvor->lijevo = nullptr;
+    pomocni->desno = cvor;
+    cvor->roditelj = pomocni;
+    pomocni->balans = 0;
+    cvor->balans = 0;
+}
+
+template <typename Kljuc, typename Vrijednost>
+void AVLStabloMapa<Kljuc, Vrijednost>::azurirajBalans(Cvor<Kljuc, Vrijednost>* cvor){
+    if(cvor->roditelj == nullptr) return;
+    Cvor<Kljuc, Vrijednost>* pomocni = cvor->roditelj;
+    if(pomocni->lijevo == cvor) pomocni->balans++;
+    else pomocni->balans--;
+    if(pomocni->balans < -1) lijevaRotacija(pomocni);
+    else if(pomocni->balans > 1) desnaRotacija(pomocni);
+}
+
+template <typename Kljuc, typename Vrijednost>
+void AVLStabloMapa<Kljuc, Vrijednost>::obrisi(const Kljuc &kljuc){
+    if(velicina == 0) return;
+  
+    Cvor<Kljuc, Vrijednost>* p = korijen;
+    Cvor<Kljuc, Vrijednost>* p1 = nullptr;
+
+    while(p != nullptr && kljuc != p->kljuc){
+        p1 = p;
+        if(kljuc < p->kljuc) p = p->lijevo;
+        else p = p->desno;
+    }
+    if(p == nullptr) return;
+
+    Cvor<Kljuc, Vrijednost>* p2 = nullptr;
+    if(p->lijevo == nullptr) p2 = p->desno;
+    else{
+        if(p->desno == nullptr) p2 = p->lijevo;
+        else{
+        Cvor<Kljuc, Vrijednost>* p3 = p;
+        p2 = p->lijevo;
+        Cvor<Kljuc, Vrijednost>* tmp = p2->desno;
+
+        while(tmp != nullptr){
+            p3 = p2;
+            p2 = tmp;
+            tmp = p2->desno;
+        }
+        if(p3 != p){
+            p3->desno = p2->lijevo;
+            p2->lijevo = p->lijevo;
+        }
+        p2->desno = p->desno;
+        }
+    }
+    if(p1 == nullptr) korijen = p2;
+    else{
+        if(p == p1->lijevo){
+            p1->balans--;
+            p1->lijevo = p2;
+        }
+        else{
+            p1->desno = p2;
+            p1->balans++;
+        }
+    }
+    velicina--;
+    delete p;
+}
+
+template <typename Kljuc, typename Vrijednost>
+Vrijednost& AVLStabloMapa<Kljuc, Vrijednost>::operator [](Kljuc kljuc){
+    Cvor<Kljuc, Vrijednost>*p = korijen;
+    Cvor<Kljuc, Vrijednost>*p1 = nullptr;
+    while(p != nullptr && kljuc != p->kljuc){
+        p1 = p;
+        if(kljuc > p->kljuc) p = p->desno;
+        else p = p->lijevo;
+    }
+
+    if(p != nullptr) return p->vrijednost;
+    else{
+        p = new Cvor<Kljuc, Vrijednost>();
+        p->vrijednost = Vrijednost();
+        p->kljuc = kljuc;
+        p->desno = nullptr;
+        p->lijevo = nullptr;
+        p->balans = 0;
+
+        if(korijen == nullptr){
+            velicina++;
+            korijen = p;
+            return p->vrijednost;
+        }
+        else{
+            if(kljuc > p1->kljuc) p1->desno = p;
+            else p1->lijevo = p;
+            azurirajBalans(p);
+            velicina++;
+        } 
+    }
+    return p->vrijednost;
+    
+}
+int main() {
+    std::cout << "Zadaća 4, Zadatak 1";
+    return 0;
+}

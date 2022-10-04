@@ -1,0 +1,189 @@
+#include <iostream>
+
+template <typename Tip> class DvostraniRed {
+  struct Cvor {
+    Tip element;
+    Cvor *prethodni;
+    Cvor *sljedeci;
+    Cvor(Tip element)
+        : element(element), prethodni(nullptr), sljedeci(nullptr) {}
+  };
+  Cvor *pocetni, *zadnji;
+  int n;
+
+public:
+  DvostraniRed<Tip>() {
+    pocetni = zadnji = nullptr;
+    n = 0;
+  }
+  DvostraniRed<Tip>(const DvostraniRed<Tip> &);
+  ~DvostraniRed<Tip>(); //{ brisi(); }
+  DvostraniRed<Tip> &operator=(const DvostraniRed<Tip> &);
+
+  void brisi() {
+      int pomocna = n;
+    for (int i = 0; i < pomocna; i++)
+      this->skiniSaVrha();
+  }
+  int brojElemenata() const { return n; }
+  void staviNaVrh(const Tip &e) {
+    Cvor *novi = new Cvor(e);
+    if (n == 0) {
+      pocetni = novi;
+      zadnji = pocetni;
+      n++;
+    } else {
+      novi->prethodni = zadnji;
+      zadnji->sljedeci = novi;
+      zadnji = novi;
+      n++;
+    }
+  }
+  Tip skiniSaVrha() {
+    if (n == 0)
+      throw "Prazan red";
+    Tip povratni = zadnji->element;
+    if (n == 1) {
+      delete pocetni;
+      pocetni = zadnji = nullptr;
+    } else {
+      Cvor *p = zadnji;
+      zadnji = zadnji->prethodni;
+      zadnji->sljedeci->prethodni = nullptr;
+      zadnji->sljedeci = nullptr;
+      delete p;
+    }
+    n--;
+    return povratni;
+  }
+  void staviNaCelo(const Tip &e) {
+    Cvor *novi = new Cvor(e);
+    if (n == 0)
+      pocetni = zadnji = novi;
+    else {
+      novi->sljedeci = pocetni;
+      pocetni->prethodni = novi;
+      pocetni = novi;
+    }
+    n++;
+  }
+  Tip skiniSaCela() {
+    if (n == 0)
+      throw "Prazan red";
+    Cvor *p = pocetni->sljedeci;
+    Tip povratni = pocetni->element;
+    delete pocetni;
+
+    if (n == 1) {
+      pocetni = zadnji = nullptr;
+    } else {
+      pocetni = p;
+    }
+    n--;
+    return povratni;
+  }
+  Tip &vrh() {
+    if (n == 0)
+      throw "Prazan red";
+    return zadnji->element;
+  }
+  Tip &celo() {
+    if (n == 0)
+      throw "Prazan red";
+    return pocetni->element;
+  }
+};
+
+template <typename Tip>
+DvostraniRed<Tip>::DvostraniRed(const DvostraniRed &dr) {
+  pocetni = zadnji = nullptr;
+  n = 0;
+  Cvor *p = dr.pocetni;
+  while (p != 0) {
+    staviNaVrh(p->element);
+    p = p->sljedeci;
+  }
+}
+template <typename Tip>
+DvostraniRed<Tip> &DvostraniRed<Tip>::operator=(const DvostraniRed<Tip> &dr) {
+  if (&dr == this)
+    return *this;
+  this->brisi();
+  Cvor *p = dr.pocetni;
+  while (p) {
+    this->staviNaVrh(p->element);
+    p = p->sljedeci;
+  }
+  return *this;
+}
+template<typename Tip>
+DvostraniRed<Tip>::~DvostraniRed(){
+    brisi();
+}
+
+
+void TestbrojElemenata(){
+    DvostraniRed<int> dr;
+    for(int i=0; i<5; i++){
+       dr.staviNaVrh(1);
+    }
+    if(dr.brojElemenata() == 5) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Nema 5 elemenata"<<std::endl;
+}
+void TestBrisi(){
+    DvostraniRed<int>dr;
+    for(int i=0; i<5; i++) dr.staviNaVrh(1);
+    dr.brisi();
+    if(dr.brojElemenata() != 0) std::cout<<"Greska"<<std::endl;
+    else std::cout<<"OK"<<std::endl;
+}
+void TestVrh(){
+    DvostraniRed<int>dr;
+    for(int i=0; i<101; i++) dr.staviNaVrh(i);
+    if(dr.vrh() == 100) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+void TestCelo(){
+    DvostraniRed<int> dr;
+    for(int i=0; i<101; i++) dr.staviNaCelo(i);
+    if(dr.celo() == 100) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+void TestStaviNaCelo(){
+    DvostraniRed<int>dr;
+    for(int i=0; i<5; i++) dr.staviNaCelo(i);
+    if(dr.celo() == 4) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+void TestSkiniSaCela(){
+    DvostraniRed<int> dr;
+    for(int i=0; i<5; i++) dr.staviNaCelo(i);
+    dr.skiniSaCela();
+    if(dr.celo() == 3) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+void TestStaviNaVrh(){
+    DvostraniRed<int>dr;
+    for(int i=0; i<5; i++) dr.staviNaVrh(i);
+    if(dr.vrh() == 4) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+void TestSkiniSaVrha(){
+    DvostraniRed<int>dr;
+    for(int i=0; i<5; i++) dr.staviNaVrh(i);
+    dr.skiniSaVrha();
+    if(dr.vrh() == 3) std::cout<<"OK"<<std::endl;
+    else std::cout<<"Greska"<<std::endl;
+}
+int main() {
+  std::cout << "Zadaća 2, Zadatak 1"<<std::endl;
+  TestbrojElemenata();
+  TestBrisi();
+  TestVrh();
+  TestCelo();
+  TestStaviNaCelo();
+  TestSkiniSaCela();
+  TestStaviNaVrh();
+  TestSkiniSaVrha();
+  return 0;
+}

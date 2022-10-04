@@ -1,0 +1,183 @@
+#include <iostream>
+#include <vector>
+
+template<typename Tip>
+class Iterator;
+
+template <typename Tip>
+class Stek{
+    struct Cvor{
+        Tip element;
+        Cvor *sljedeci;
+        Cvor(const Tip &element, Cvor *p) : element(element), sljedeci(p) {}
+    };
+    Cvor *pVrh;
+    int n;
+
+    public:
+    Stek() : pVrh(nullptr), n(0) {}
+    ~Stek(){ brisi(); }
+    Stek(const Stek &s){
+        n = 0;
+        Cvor *pomocni = s.pVrh;
+        Stek<Tip> pomocniS;
+        for(int i=0; i<s.n; i++){
+            pomocniS.stavi(pomocni->element);
+            pomocni = pomocni->sljedeci;
+        }
+
+        while(pomocniS.brojElemenata()) this->stavi(pomocniS.skini());
+    }
+    int brojElemenata() const{
+        return n;
+    }
+    void brisi(){
+        if(pVrh != nullptr){
+            Cvor *pomocni = pVrh ->sljedeci;
+            while(pVrh->sljedeci != nullptr){
+                delete pVrh;
+                pVrh = pomocni;
+                pomocni = pVrh->sljedeci;
+            }
+            delete pVrh;
+            pVrh = nullptr;
+            n=0;
+        }
+    }
+    void stavi(const Tip &s){
+        if(n == 0) pVrh = new Cvor(s, nullptr);
+        else pVrh = new Cvor(s, pVrh);
+
+        n++;
+    }
+    Tip skini(){
+        if(n == 0) throw "Prazan stek";
+        Tip sadrzaj = pVrh->element;
+        Cvor *pomocni = pVrh->sljedeci;
+        delete pVrh;
+        pVrh = pomocni;
+        n--;
+        if(n == 0) pVrh = nullptr;
+        return sadrzaj;
+    }
+    Tip &vrh(){
+        if(n == 0) throw "Prazan stek";
+        return pVrh->element;
+    }
+    Stek &operator=(const Stek &e){
+        if(&e == this) return *this;
+        this->brisi();
+        n = 0;
+        Cvor *pomocni = e.pVrh;
+        Stek<Tip> pomocniS;
+        for(int i=0; i<e.brojElemenata(); i++){
+            pomocniS.stavi(pomocni->element);
+            pomocni = pomocni->sljedeci;
+        }
+
+        while(pomocniS.brojElemenata()) this->stavi(pomocniS.skini());
+        n = e.n;
+        return *this;
+    }
+    friend class Iterator<Tip>;
+
+};
+
+template <typename Tip>
+class Iterator{
+    const Stek<Tip> *ss;
+    typename Stek<Tip>::Cvor *p;
+
+    public:
+    Iterator(const Stek<Tip> &prvii){
+        ss = (const Stek<Tip> *) &prvii;
+        p = ss->pVrh;
+    }
+    Tip &vrh() const{
+        return p->element;
+    }
+    bool sljedeci(){
+        if(p->sljedeci == nullptr) return false;
+        p = p->sljedeci;
+        return true;
+    }
+    void pocetak(){
+        p = ss->prvi;
+    }
+    void kraj(){
+        p = ss->zadnji;
+    }
+
+};
+
+void pretraga(Stek<std::vector<int>> &s, int trazeni){
+    Iterator<std::vector<int>> it(s);
+    int pozicija = 0;
+    bool pronadjen = false;
+    int i=0;
+    while(i < s.brojElemenata()){
+        std::vector<int> pomocni(it.vrh());
+        int k = it.vrh().size();
+        int j=0;
+        while(j<k){
+            if(j == pomocni.size()) break;
+            int tekuci = (k+j)/2;
+            if(j == tekuci || k == tekuci) break;
+            if(pomocni[tekuci] < trazeni) j = tekuci;
+            else if(pomocni[tekuci] > trazeni) k = tekuci;
+            else{
+                pozicija = tekuci;
+                pronadjen = true;
+                break;
+            }
+        }
+        if(pronadjen) break;
+        it.sljedeci();
+        i++;
+    }
+
+    if(pronadjen) std::cout<<pozicija<<" "<<s.brojElemenata()-1-i;
+    else std::cout<<"Nema elementa";
+}
+
+void TestFunkcija1(){
+    Stek<std::vector<int>> s;
+    std::vector<int> v1,v2;
+    for(int i=0; i<5; i++) v1.push_back(i);
+    for(int i=6; i<15; i++) v2.push_back(i);
+    s.stavi(v1);
+    s.stavi(v2);
+    pretraga(s, 5);
+}
+void TestFunkcija2(){
+    Stek<std::vector<int>> s;
+    std::vector<int>v1,v2;
+    for(int i=5; i<15; i++) v1.push_back(i);
+    for(int i=10; i<25; i++) v2.push_back(i);
+    s.stavi(v2);
+    s.stavi(v1);
+    s.brisi();
+    pretraga(s, 33);
+    std::cout<<std::endl;
+    v1.push_back(33);
+    s.stavi(v1);
+    pretraga(s,33);
+}
+void TestFunkcija3(){
+    Stek<std::vector<int>>s;
+    std::vector<int>v1,v2;
+    for(int i=11; i<20; i++) v2.push_back(i);
+    for(int i=3; i<17; i++) v1.push_back(i);
+    s.stavi(v2);
+    s.stavi(v1);
+    pretraga(s, 10);
+}
+int main() {
+    std::cout << "Zadaća 2, Zadatak 2"<<std::endl;
+    TestFunkcija1();
+    std::cout<<std::endl;
+    TestFunkcija2();
+    std::cout<<std::endl;
+    TestFunkcija3();
+    return 0;
+}

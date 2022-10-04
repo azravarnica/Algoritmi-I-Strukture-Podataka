@@ -1,0 +1,111 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+
+using namespace std;
+
+//Zadatak 1
+
+void radixSort(vector<int> &a){
+    int m=1;
+    vector<deque<int>> r(10);
+
+    for(;;){
+        for(int x:a){
+            r[(x/m)%10].push_back(x);
+        }
+        m *= 10;
+        int i=0, j=0;
+        while(j < r.size()){
+            while(!r[j].empty()){
+                a[i++] = r[j].front();
+                r[j].pop_front();
+            }
+            if(i == a.size() && j == 0) return;
+            j++;
+        }
+
+    }
+
+}
+
+//Zadatak 2
+
+bool daLiJeList(int velicina, int i){
+    return(i >= velicina/2 && i < velicina);
+}
+
+void popraviDole(vector<int> &a, int &velicina, int i){
+    while(!daLiJeList(velicina,i)){
+        int lijevoDijete = 2*i+1;
+        int desnoDijete = 2*i+2;
+        if(desnoDijete < velicina && a[desnoDijete] > a[lijevoDijete]) lijevoDijete = desnoDijete;
+        if(a[i] > a[lijevoDijete]) return;
+        swap(a[i], a[lijevoDijete]);
+        i = lijevoDijete;
+    }
+}
+
+void stvoriGomilu(vector<int> &a){
+    int velicina = a.size();
+    for(int i = velicina/2; i>=0; i--) popraviDole(a, velicina, i);
+
+}
+
+void popraviGore(vector<int> &a, int i){
+    int roditelj = (i-1) / 2;
+
+    while(i > 0 && a[i] > a[roditelj]){
+        swap(a[i], a[roditelj]);
+        i = roditelj;
+        roditelj = (i-1) / 2;
+    }
+}
+void umetniUGomilu(vector<int> &a, int umetnuti, int &velicina){
+    a.push_back(umetnuti);
+    velicina++;
+    popraviGore(a, velicina-1);
+
+}
+
+int izbaciPrvi(vector<int> &a, int &velicina){
+    if(a.empty()) throw "Prazna gomila!";
+    velicina--;
+    swap(a[0], a[velicina]);
+    if(velicina != 0) popraviDole(a, velicina, 0);
+    return a[velicina];
+}
+
+void gomilaSort(vector<int> &a){
+    stvoriGomilu(a);
+    int velicina = a.size();
+    for(int i=0; i<a.size()-1; i++) izbaciPrvi(a, velicina);
+}
+int main() {
+    std::cout << "Zadaća 3, Zadatak 1";
+    vector<int>a,b;
+     a.push_back(99);
+     a.push_back(109);
+    for(int i=4; i<1000; i++){
+        a.push_back(i);
+        i+=3;
+    }
+    for(int i=0; i< a.size(); i++){
+        b.push_back(a[i]);
+    }
+    radixSort(a);
+    gomilaSort(b);
+    bool testOK = true;
+    cout<<"Radix: "<<endl;
+    for(int i = 0; i<a.size(); i++) cout<<a[i]<<" ";
+
+    cout<<endl<<"Gomila: "<<endl;
+    for(int i=0; i<b.size(); i++) cout<<b[i]<<" ";
+
+    for(int i=0; i<a.size(); i++) if(a[i] != b[i]) testOK = false;
+     cout<<endl;
+    if(testOK) cout<<"OK";
+    else cout<<"NIJE OK";
+    return 0;
+}

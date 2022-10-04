@@ -1,0 +1,338 @@
+#include <iostream>
+
+template <typename Tip>
+class Iterator;
+
+template <typename Tip>
+class Lista{
+    public:
+    Lista() {}
+    virtual ~Lista() {}
+    virtual int brojElemenata() const = 0;
+    virtual Tip trenutni() const = 0;
+    virtual Tip &trenutni() = 0;
+    virtual bool prethodni() = 0;
+    virtual bool sljedeci() = 0;
+    virtual void pocetak() = 0;
+    virtual void kraj() = 0;
+    virtual void obrisi() = 0;
+    virtual void dodajIspred(const Tip &el) = 0;
+    virtual void dodajIza(const Tip &el) = 0;
+    virtual Tip operator[](int i) const = 0;
+    virtual Tip &operator[](int i) = 0;
+};
+
+template <typename Tip>
+    struct Cvor{
+       Tip sadrzaj;
+       Cvor *prethodni;
+       Cvor *sljedeci;
+    };
+
+template <typename Tip>
+class DvostrukaLista : public Lista<Tip>{
+    int brojC; 
+    Cvor<Tip> *prviC, *zadnjiC, *trenutniC;
+    public:
+
+    DvostrukaLista() : prviC(nullptr), zadnjiC(nullptr), trenutniC(nullptr), brojC(0) {}
+    DvostrukaLista(const DvostrukaLista &dlista) : prviC(0), trenutniC(0), zadnjiC(0), brojC(0){
+        Cvor<Tip> *p(dlista.trenutniC);
+        dodajIspred(p->sadrzaj);
+        p = dlista.prviC;
+        while(p->sljedeci != nullptr){
+            dodajIspred(p->sadrzaj);
+            p = p->sljedeci;
+        }
+    }
+    DvostrukaLista &operator = (const DvostrukaLista &dlista){
+        if(&dlista == this) return *this;
+        while(brojC != 0) obrisi();
+        Cvor<Tip> *p(dlista.trenutniC);
+        dodajIspred(p->sadrzaj);
+        p = dlista.prviC;
+        while(p->sljedeci != nullptr){
+            dodajIspred(p->sadrzaj);
+            p = p->sljedeci;
+        }
+        return *this;
+    }
+    ~DvostrukaLista(){
+        while(prviC != nullptr){
+            trenutniC = prviC;
+            prviC = prviC->sljedeci;
+            delete trenutniC;
+        }
+        trenutniC = zadnjiC = nullptr;
+        brojC = 0;
+    }
+    int brojElemenata() const{
+        return brojC;
+    }
+    Tip trenutni() const{
+        if(brojC == 0) throw "Lista je prazna";
+        return trenutniC -> sadrzaj;
+    }
+    Tip &trenutni(){
+        if(brojC == 0) throw "Lista je prazna";
+        return trenutniC -> sadrzaj;
+    }
+    bool prethodni(){
+        if(brojC == 0) throw "Lista je prazna";
+        if(trenutniC == prviC) return false;
+        trenutniC = trenutniC->prethodni;
+        return true;
+    }
+    bool sljedeci(){
+        if(brojC == 0) throw "Lista je prazna";
+        if(trenutniC == zadnjiC) return false;
+        trenutniC = trenutniC->sljedeci;
+        return true;
+    }
+    void pocetak(){
+        if(brojC == 0) throw "Lista je prazna";
+        trenutniC = prviC;
+    }
+    void kraj(){
+        if(brojC == 0) throw "Lista je prazna";
+        trenutniC = zadnjiC;
+    }
+    void obrisi(){
+        if(brojC == 0) throw "Lista je prazna";
+        if(trenutniC != prviC){
+            Cvor<Tip> *p = trenutniC->prethodni;
+            p->sljedeci = trenutniC->sljedeci;
+            if(trenutniC != zadnjiC){
+                trenutniC->sljedeci->prethodni = p;
+                delete trenutniC;
+                trenutniC = p->sljedeci;
+            }else{
+                zadnjiC = p;
+                delete trenutniC;
+                trenutniC = p;
+            }
+
+        }else{
+            prviC = prviC->sljedeci;
+            delete trenutniC;
+            trenutniC = prviC;
+        }
+        brojC --;
+    }
+    void dodajIspred(const Tip &el){
+        Cvor<Tip> *p = new Cvor<Tip>();
+        p->sadrzaj = el;
+        if(brojC == 0){
+            prviC = trenutniC = zadnjiC = p;
+            prviC->prethodni = nullptr;
+            zadnjiC->sljedeci = nullptr;
+        }else if(trenutniC != prviC){
+            p->prethodni = trenutniC->prethodni;
+            trenutniC->prethodni = p;
+            p->sljedeci = trenutniC;
+            p->prethodni->sljedeci = p;
+        }else{
+            trenutniC->prethodni = p;
+            p->sljedeci = trenutniC;
+            prviC = p;
+        }
+        brojC ++;
+    }
+    void dodajIza(const Tip &el){
+        Cvor<Tip> *p = new Cvor<Tip>();
+        p->sadrzaj = el;
+        if(brojC == 0){
+            prviC = trenutniC = zadnjiC = p;
+            prviC->prethodni = nullptr;
+            zadnjiC->sljedeci = nullptr;
+        }else{
+            p->sljedeci = trenutniC->sljedeci;
+            trenutniC->sljedeci = p;
+            p->prethodni = trenutniC;
+            if(zadnjiC != trenutniC){
+                p->sljedeci->prethodni = p;
+            }else{
+                zadnjiC = p;
+            }
+        }
+        brojC ++;
+    }
+    Tip operator[](int i) const{
+        if(i < 0 || i >= brojC) throw "Parametar pogresan";
+        Cvor<Tip> *it = prviC;
+        for(int j=0; j<i; j++){
+            it = it->sljedeci;
+        }
+        return it->sadrzaj;
+    }
+    Tip &operator[](int i){
+        if(i < 0 || i>= brojC) throw "Parametar pogresan";
+        Cvor<Tip> *it= prviC;
+        for(int j=0; j<i; j++){
+            it = it->sljedeci;
+        }
+        return it->sadrzaj;
+    }   
+   // DvostrukaLista &operator = (const DvostrukaLista<Tip> &);
+    //DvostrukaLista &operator = (DvostrukaLista<Tip> &&);
+    friend class Iterator<Tip>;
+
+};
+/*template <typename Tip>
+DvostrukaLista<Tip> :: DvostrukaLista(const DvostrukaLista<Tip> &lista){
+    Cvor<Tip> *pomocni1 = lista.prviC;
+    Cvor<Tip> *pomocni2 = new Cvor<Tip>();
+    pomocni2->sadrzaj = pomocni1->sadrzaj;
+    prviC = pomocni2;
+    pomocni1 = pomocni1->sljedeci;
+    while(pomocni1->sljedeci != nullptr){
+        pomocni2->sljedeci = new Cvor<Tip>();
+        pomocni2->sljedeci->sadrzaj = pomocni1->sadrzaj;
+        pomocni2->sljedeci->prethodni = pomocni1->prethodni;
+        pomocni1 = pomocni1->sljedeci;
+        pomocni2 = pomocni2->sljedeci;
+    }
+    pomocni1 = lista.prviC;
+    int brojac = 0;
+    while(pomocni1 != lista.trenutniC){
+        pomocni1 = pomocni1->sljedeci;
+        brojac++;
+    }
+    trenutniC = prviC;
+    for(int i=0; i<brojac; i++){
+        trenutniC = trenutniC->sljedeci;
+    }
+    brojC = lista.brojC;
+    zadnjiC = prviC;
+    for(int i=0; i<brojC-1; i++){
+        zadnjiC = zadnjiC->sljedeci;
+    }
+}
+
+template <typename Tip>
+DvostrukaLista<Tip> :: DvostrukaLista(DvostrukaLista<Tip> &&lista){
+    prviC = lista->prviC;
+    zadnjiC = lista.zadnjiC;
+    trenutniC = lista.trenutniC;
+    brojC = brojC;
+}
+
+template <typename Tip>
+DvostrukaLista<Tip> :: ~DvostrukaLista(){
+    while(prviC != nullptr){
+        trenutniC = prviC;
+        prviC = prviC->sljedeci;
+        delete trenutniC;
+        trenutniC = nullptr;
+    }
+}
+template <typename Tip>
+DvostrukaLista<Tip> &DvostrukaLista<Tip> :: operator=(const DvostrukaLista<Tip> &lista){
+    if(this == &lista) return *this;
+    while(prviC != nullptr){
+        trenutniC = prviC;
+        prviC = prviC->sljedeci;
+        delete trenutniC;
+        trenutniC = nullptr;
+    }
+    brojC = lista.brojC;
+    Cvor<Tip> *pomocni1 = lista.prviC;
+    Cvor<Tip> *pomocni2 = new Cvor<Tip>();
+    pomocni2->sadrzaj = pomocni1->sadrzaj;
+    prviC = pomocni2;
+    pomocni1 = pomocni1->sljedeci;
+    while(pomocni1->sljedeci != nullptr){
+        pomocni2->sljedeci = new Cvor<Tip>();
+        pomocni2->sljedeci->sadrzaj = pomocni1->sadrzaj;
+        pomocni2->sljedeci->prethodni = pomocni1->prethodni;
+        pomocni1 = pomocni1->sljedeci;
+        pomocni2 = pomocni2->sljedeci;
+    }
+    pomocni1 = lista.prviC;
+    int brojac = 0;
+    while(pomocni1 != lista.trenutniC){
+        pomocni1 = pomocni1->sljedeci;
+        brojac++;
+    }
+    trenutniC = prviC;
+    for(int i=0; i<brojac; i++){
+        trenutniC = trenutniC->sljedeci;
+    }
+    zadnjiC = prviC;
+    for(int i=0; i<brojC-1; i++){
+        zadnjiC = zadnjiC->sljedeci;
+    }
+    return *this;
+
+}
+template<typename Tip>
+DvostrukaLista<Tip> &DvostrukaLista<Tip>::operator = (DvostrukaLista<Tip> &&lista){
+    if(this == &lista) return *this;
+    while(prviC != nullptr){
+        trenutniC = prviC;
+        prviC = prviC->sljedeci;
+        delete trenutniC;
+        trenutniC = nullptr;
+    }
+    prviC = lista.prviC;
+    trenutniC = lista.trenutniC;
+    zadnjiC = lista.zadnjiC;
+    brojC = lista.brojC;
+    return *this;
+}*/
+
+template<typename Tip>
+class Iterator{
+int broj;
+Cvor<Tip> *trenutnil;
+const DvostrukaLista<Tip> *lista;
+public: 
+Iterator(const Lista<Tip> &l){
+    lista = (const DvostrukaLista<Tip>*) &l;
+    trenutnil = lista->prviC;
+   // kraj2 = l.zadnjiC;
+
+}
+Tip trenutni() const{
+    if(lista->brojElemenata() == 0) throw "Lista je prazna";
+    return trenutnil->sadrzaj;
+}
+bool prethodni(){
+    if(lista->brojElemenata() == 0) throw "Nema prethodnog";
+    if(trenutnil->prethodni == nullptr) return false;
+    trenutnil = trenutnil->prethodni;
+    return true;
+}
+bool sljedeci(){
+    if(lista->brojElemenata() == 0) throw "Nema sljedeceg";
+    if(trenutnil->sljedeci == nullptr) return false;
+    trenutnil = trenutnil->sljedeci;
+    return true;
+}
+void pocetak(){
+    if(lista->brojElemenata() == 0) throw "Lista je prazna";
+    trenutnil = lista->prviC;
+}
+void kraj(){
+    if(lista->brojElemenata() == 0) throw "Lista je prazna";
+    trenutnil = lista->zadnjiC;
+}
+};
+
+
+template<typename Tip>
+Tip dajMaksimum(const Lista<Tip> &n){
+    Iterator<Tip> it(n);
+    it.pocetak();
+    Tip max = it.trenutni();
+    for(int i=0; i<n.brojElemenata(); i++){
+        if(it.trenutni() > max) max = it.trenutni();
+        it.sljedeci();
+    }
+    return max;
+
+}
+int main() {
+    std::cout << "Zadaća 1, Zadatak 1";
+    return 0;
+}
